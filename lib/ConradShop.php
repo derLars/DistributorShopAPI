@@ -120,6 +120,7 @@ class ConradShop extends Shop implements IShopAPI {
 		$this->extractDescriptionFromPagedata($htmlResponse, $article);
 		$this->extractAttributesFromPagedata($htmlResponse, $article);
 		$this->extractDatasheetUrlsFromPagedata($htmlResponse, $article);
+		$this->extractAvailabilityFromPagedata($htmlResponse, $article);
 		
 		return $article;
 	}
@@ -280,6 +281,35 @@ class ConradShop extends Shop implements IShopAPI {
 		}
 		
 		$article->Description = $description;
+		return true;
+	}
+	
+	
+	/**
+	 * Extracts the availability from the pagedata.
+	 *
+	 * @param  string      $pagedata
+	 * @param  ShopArticle &$article
+	 * @return bool
+	 */
+	private function extractAvailabilityFromPagedata($pagedata,
+	                                                 ShopArticle &$article) {
+		$prexp = '/<strong id="product_availability" class="([a-zA-Z0-9_]+)">/i';
+		if (!preg_match($prexp, $pagedata, $matches))
+			return false;
+		
+		if (empty($matches[1]))
+			return false;
+		
+		if (preg_match('/avaibility_green|available/i', $matches[1]))
+			$article->Availability = $article::AVAILABILITY_AVAILABLE;
+		else if (preg_match('/avai(la)?bility_yellow/i', $matches[1]))
+			$article->Availability = $article::AVAILABILITY_NEAR_FUTURE;
+		else if (preg_match('/avai(la)?bility_red/i', $matches[1]))
+			$article->Availability = $article::AVAILABILITY_UNAVAILABLE;
+		else
+			return false;
+		
 		return true;
 	}
 	
