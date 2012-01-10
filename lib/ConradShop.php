@@ -58,6 +58,10 @@ class ConradShop extends Shop implements IShopAPI {
 			'/<div id="mc_info_\d{4,8}_technischedaten2">/i';
 	
 	
+	/**
+	 * A pregexp for datasheets
+	 * @var string
+	 */
 	private $datasheetPregexp = '/<div class="inner" id="download-dokumente"/';
 	
 	
@@ -70,25 +74,27 @@ class ConradShop extends Shop implements IShopAPI {
 	}
 	
 	
-	
 	/**
 	 * Searches an article by it's unique identifier in the shop in question.
 	 * Returns a boolean false, if the article was not found, and an instance
 	 * of an Article-Class, if found.
 	 * 
-	 * @param string $id
-	 * @return (false|Article)
+	 * @param  string $id
+	 * @return (false|ShopArticle)
 	 */
 	public function GetArticleById($id) {
-		$ch = curl_init();
-		$callUrl = str_replace('{{id}}', $id, $this->articleByIdUrl);
-		curl_setopt($ch, CURLOPT_URL, $callUrl);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		$response = curl_exec($ch);
-		if ($response === false)
-			die("Could not get URL: ".curl_error($ch));
+		if (!$this->validateArticleId($id))
+			die("Id did not validate");
 		
-		if (preg_match($this->articleNotFoundPregexp, $response)) {
+		$callUrl = str_replace('{{id}}', $id, $this->articleByIdUrl);
+		
+		try {
+			$htmlResponse = $this->fetchHtmlFromUrl($callUrl);
+		} catch (Exception $e) {
+			die("Error fetching the Url: ".$e->getMessage());
+		}
+		
+		if (preg_match($this->articleNotFoundPregexp, $htmlResponse)) {
 			return false;
 		}
 		
@@ -97,12 +103,25 @@ class ConradShop extends Shop implements IShopAPI {
 		$article->ArticleId   = $id;
 		$article->ArticleUrl  = $callUrl;
 		
-		$this->extractPriceFromPagedata($response, $article);
-		$this->extractDescriptionFromPagedata($response, $article);
-		$this->extractAttributesFromPagedata($response, $article);
-		$this->extractDatasheetUrlsFromPagedata($response, $article);
+		$this->extractPriceFromPagedata($htmlResponse, $article);
+		$this->extractDescriptionFromPagedata($htmlResponse, $article);
+		$this->extractAttributesFromPagedata($htmlResponse, $article);
+		$this->extractDatasheetUrlsFromPagedata($htmlResponse, $article);
 		
 		return $article;
+	}
+	
+	
+	/**
+	 * Simple stupid validation for Article ID
+	 *
+	 * @param  string $id
+	 * @return bool
+	 */
+	private function validateArticleId($id) {
+		if ((int)$id > 1000 && (int)$id < PHP_INT_MAX)
+			return true;
+		return false;
 	}
 	
 	

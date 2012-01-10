@@ -10,6 +10,24 @@ require_once("MasterClass.php");
 abstract class Shop extends Masterclass
 {
 	/**
+	 * Fetches the reponse from an url
+	 *
+	 * @param  string $url
+	 * @throws Exception
+	 * @return string
+	 */
+	protected function fetchHtmlFromUrl($url) {
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$response = curl_exec($ch);
+		if ($response === false)
+			throw new Exception ("Could not fetch URL: ".curl_error($ch));
+		return $response;
+	}
+		
+
+	/**
 	 * Grabs a complete div-structure from some starting point
 	 * 
 	 * @param  string $startPregexp

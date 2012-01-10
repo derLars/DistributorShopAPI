@@ -2,6 +2,11 @@
 
 require_once("MasterClass.php");
 
+/**
+ * A POCO-class for storing articles from shops in
+ *
+ * @author Lars Kumbier
+ */
 class ShopArticle extends MasterClass {
 	/**
 	 * The distributor of this article (required)
