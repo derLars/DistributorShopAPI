@@ -14,10 +14,11 @@ require_once("ShopArticle.php");
  */
 class ConradShop extends Shop implements IShopAPI {
 	/**
-	 * Holds the url for getting Articles by id
+	 * Holds the url for getting Articles by id. Must contain a {{id}}-tag for
+	 * injecting the searched article id into.
 	 * @var string
 	 */
-	private $articleByIdUrl = null;
+	private $articleByIdUrl = "http://www.conrad.de/ce/de/product/{{id}}/";
 	
 	/**
 	 * The Distributor name
@@ -30,6 +31,11 @@ class ConradShop extends Shop implements IShopAPI {
 	 */
 	private $articleNotFoundPregexp = 
 			'/leider konnten wir keinen artikel mit/i';
+	
+	/**
+	 * A pregexp for wrong urls
+	 */
+	private $wrongUrlPregexp = '/404-Error|Fehler 404/i';
 	
 	/**
 	 * A pregexp, where the detail page part is
@@ -94,6 +100,10 @@ class ConradShop extends Shop implements IShopAPI {
 			die("Error fetching the Url: ".$e->getMessage());
 		}
 		
+		if (preg_match($this->wrongUrlPregexp, $htmlResponse)) {
+			die("The conrad-URL seems to be wrong - a 404 was issued.");
+		}
+		
 		if (preg_match($this->articleNotFoundPregexp, $htmlResponse)) {
 			return false;
 		}
@@ -103,7 +113,10 @@ class ConradShop extends Shop implements IShopAPI {
 		$article->ArticleId   = $id;
 		$article->ArticleUrl  = $callUrl;
 		
-		$this->extractPriceFromPagedata($htmlResponse, $article);
+		if (!$this->extractPriceFromPagedata($htmlResponse, $article))
+			die("Could not extract price from pagedata, which indicates ".
+			    "a change in the page layout (deja-vu).");
+		
 		$this->extractDescriptionFromPagedata($htmlResponse, $article);
 		$this->extractAttributesFromPagedata($htmlResponse, $article);
 		$this->extractDatasheetUrlsFromPagedata($htmlResponse, $article);

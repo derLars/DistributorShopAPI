@@ -20,9 +20,12 @@ abstract class Shop extends Masterclass
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 		$response = curl_exec($ch);
+		
 		if ($response === false)
 			throw new Exception ("Could not fetch URL: ".curl_error($ch));
+		
 		return $response;
 	}
 		
