@@ -175,18 +175,14 @@ class ConradShop extends Shop implements IShopAPI {
 			$curPos = $openPos+4;
 			$part = substr($data, $openPos, $closePos-$openPos);
 			
-			echo "> $part\n\n";
-			
 			$url = null;
 			if (!stripos($part, '<a ')) {
 				$curTitle = strip_tags($part);
-				echo ">>> TITLE: $curTitle\n\n";
 			} else {
 				$hrefOpenPos = stripos($part, ' href="') + 7;
 				$hrefClosePos = stripos($part, '"', $hrefOpenPos);
 				$url = substr($part, $hrefOpenPos, 
 						$hrefClosePos - $hrefOpenPos);
-				echo ">>> URL: $url\n\n";
 			
 				$curTitleName = $curTitle;
 				if (array_key_exists($curTitle, $manuals)) {
