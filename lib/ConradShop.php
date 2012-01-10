@@ -7,7 +7,9 @@ require_once("ShopArticle.php");
 
 
 /**
- * Implements the IShopAPI for the conrad online shop
+ * Implements the IShopAPI for the conrad online shop. If you want to handle
+ * unknown conditions (usually from a changed page layout), you may define a
+ * callback-function to e.g. mail the developers (see SetFatalErrorCallback()).
  * 
  * @author Lars Kumbier
  * @see    http://www.conrad.de
@@ -71,6 +73,17 @@ class ConradShop extends Shop implements IShopAPI {
 	private $datasheetPregexp = '/<div class="inner" id="download-dokumente"/';
 	
 	
+	/**
+	 * A function to call in case of a changed html layout. The params are:
+	 *  - called url (string)
+	 *  - returned html response (string)
+	 * @var     string
+	 * @example 
+	 */
+	private $fatalErrorCallback = null;
+	
+	
+	
 	
 	/**
 	 * Returns the Distributor Name.
@@ -113,9 +126,15 @@ class ConradShop extends Shop implements IShopAPI {
 		$article->ArticleId   = $id;
 		$article->ArticleUrl  = $callUrl;
 		
-		if (!$this->extractPriceFromPagedata($htmlResponse, $article))
-			die("Could not extract price from pagedata, which indicates ".
-			    "a change in the page layout (deja-vu).");
+		if (!$this->extractPriceFromPagedata($htmlResponse, $article)) {
+			if ($this->fatalErrorCallback === null)
+				throw new Exception(
+					"Could not extract price from pagedata, which indicates ".
+					"a change in the page layout (deja-vu).");
+			
+			call_user_func($this->fatalErrorCallback, $callUrl, $htmlResponse);
+			exit();
+		}
 		
 		$this->extractDescriptionFromPagedata($htmlResponse, $article);
 		$this->extractAttributesFromPagedata($htmlResponse, $article);
@@ -333,6 +352,23 @@ class ConradShop extends Shop implements IShopAPI {
 					'where to set the id-value');
 		
 		$this->articleByIdUrl = $value;
+		return true;
+	}
+	
+	
+	
+	/**
+	 * Setter for fatalErrorCallback
+	 *
+	 * @param  string $value
+	 * @throws InvalidArgumentException
+	 * @return bool
+	 */
+	public function SetFatalErrorCallback($value) {
+		if (!function_exists($value))
+			throw new InvalidArgumentException(
+					'FatalErrorCallback needs to be a valid function name');
+		$this->fatalErrorCallback = $value;
 		return true;
 	}
 }
